@@ -1,6 +1,6 @@
-import bcrypt from 'bcryptjs';
-import { User } from '../models/user.model.js';
-import { signToken } from '../utils/jwt.js';
+import bcrypt from "bcryptjs";
+import { User } from "../models/user.model.js";
+import { signToken } from "../utils/jwt.js";
 
 /**
  * TODO: Register a new user
@@ -13,7 +13,24 @@ import { signToken } from '../utils/jwt.js';
  */
 export async function register(req, res, next) {
   try {
-    // Your code here
+    const { name, email, password } = req.body;
+    const isExists = await User.findOne({ email });
+    if (isExists) {
+      return res
+        .status(409)
+        .json({ error: { message: "Email already exists" } });
+    }
+    const user = await User.create({
+      email,
+      name,
+      password,
+    });
+
+    const userObject = user.toObject();
+
+    delete userObject.password;
+
+    return res.status(201).json({ user: userObject });
   } catch (error) {
     next(error);
   }
@@ -32,7 +49,32 @@ export async function register(req, res, next) {
  */
 export async function login(req, res, next) {
   try {
-    // Your code here
+    const { email, password } = req.body;
+    const checkUser = await User.findOne({ email }).select("+password");
+    if (!checkUser) {
+      return res
+        .status(401)
+        .json({ error: { message: "Invalid credentials" } });
+    }
+
+    const checkPassword = await bcrypt.compare(password, checkUser.password);
+    if (!checkPassword) {
+      return res
+        .status(401)
+        .json({ error: { message: "Invalid credentials" } });
+    }
+
+    const token = signToken({
+      userId: checkUser._id,
+      email: checkUser.email,
+      role: checkUser.role,
+    });
+
+    const user = checkUser.toObject();
+    delete user.password;
+    
+    return res.status(200).json({ token, user })
+
   } catch (error) {
     next(error);
   }
@@ -46,7 +88,7 @@ export async function login(req, res, next) {
  */
 export async function me(req, res, next) {
   try {
-    // Your code here
+    return res.status(200).json({user: req.user})
   } catch (error) {
     next(error);
   }

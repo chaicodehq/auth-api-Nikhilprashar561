@@ -8,6 +8,7 @@ import { notFound } from './middlewares/notFound.middleware.js';
  * TODO: Create Express app
  *
  * 1. Create app with express()
+ * cons
  * 2. Add express.json() middleware
  * 3. Add GET /health route → { ok: true }
  * 4. Mount auth routes at /api/auth
@@ -17,5 +18,19 @@ import { notFound } from './middlewares/notFound.middleware.js';
  * 8. Return app
  */
 export function createApp() {
-  // Your code here
+  const app = express();
+
+  app.use(express.json());
+
+  app.get('/health', async (req, res) => {
+    return res.json({ ok: true })
+  })
+
+  app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
+
+  app.use(notFound);
+  app.use(errorHandler);
+
+  return app
 }
